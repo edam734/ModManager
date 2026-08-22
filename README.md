@@ -18,7 +18,7 @@ The application maintains a backup of the game's base files, allowing modified f
 
 <br>
 
-## Planned Features
+### Planned Features
 
 - Mod conflict detection
 - Tracking of file overrides between mods
