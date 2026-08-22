@@ -18,8 +18,12 @@ The application maintains a backup of the game's base files, allowing modified f
 
 <br>
 
-### Planned Features
+## Roadmap
 
+### v1.0.0
+- Path handling refactored with `Path.relativize()` and `Path.resolve()`
+
+### v2.0.0
 - Mod conflict detection
 - Tracking of file overrides between mods
 - Mod priority/order management
