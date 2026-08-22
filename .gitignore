@@ -39,3 +39,6 @@ build/
 
 ### Environment Files ###
 .env
+
+### Local Configuration ###
+config.properties
