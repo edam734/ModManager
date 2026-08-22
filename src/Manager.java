@@ -129,7 +129,7 @@ public class Manager {
             nSkipped++;
         }
         System.out.printf((deleted ? "%s - removed" : "%s - NOT removed or doesn't exists") +
-                "%n", Path.of(Main.GAMES).relativize(gameFile));
+                "%n", Path.of(Main.gamesDir).relativize(gameFile));
     }
 
     private void addFilesRecursively(Path modFile, Source source) throws IOException {
@@ -151,7 +151,7 @@ public class Manager {
     private void filecopy(Path backupFile, Path gameFile) throws IOException {
         Files.createDirectories(gameFile.getParent());
         Files.copy(backupFile, gameFile, StandardCopyOption.REPLACE_EXISTING);
-        Path basePath = Path.of(Main.GAMES);
+        Path basePath = Path.of(Main.gamesDir);
         System.out.printf("%s  >>  %s%n", basePath.relativize(backupFile), basePath.relativize(gameFile));
         nCopied++;
     }
