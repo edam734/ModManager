@@ -102,11 +102,11 @@ public class Manager {
             return modFile;
         }
 
-        String relativePath = modFile.toString().substring(modRoot.toString().length());
+        Path relativePath = modRoot.relativize(modFile);
         if (Source.SOURCE_BACKUP.equals(other)) {
-            return Paths.get(backupRoot.toString(), relativePath);
+            return backupRoot.resolve(relativePath);
         } else if (Source.SOURCE_GAME.equals(other)) {
-            return Paths.get(gameRoot.toString(), relativePath);
+            return gameRoot.resolve(relativePath);
         }
         return null;
     }
