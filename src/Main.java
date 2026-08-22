@@ -1,4 +1,3 @@
-import java.io.FileInputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
@@ -21,7 +20,7 @@ public class Main {
     public static void main(String[] args) throws IOException {
         Path appDir = Path.of("").toAbsolutePath();
         Path configFile = appDir.resolve("config.properties");
-        Properties properties = getProperties(appDir, configFile);
+        Properties properties = getProperties(configFile);
         gamesDir = properties.getProperty("games.dir");
         backupsDir = properties.getProperty("backups.dir");
         modsDir = properties.getProperty("mods.dir");
@@ -49,50 +48,49 @@ public class Main {
         if (Files.notExists(record)) {
             Files.createFile(record);
         }
-//        Path record = createFile(RECORD_FILE);
-        try (Scanner scanner = new Scanner(System.in)) {
-            List<GameItem> gameItems = searchForGames(Path.of(gamesDir));
-            System.out.println("0- exit");
-            printGameOptions(gameItems);
-            System.out.println("Escolha um jogo:");
-            int gameNumber = scanner.nextInt();
-            exitIfChosen(gameNumber);
-            Path gameChosen = getGame(gameItems, gameNumber);
-            System.out.println("**Você escolheu o jogo: " + gameChosen.getFileName() + "**");
-            Path modDir = Paths.get(modsDir, gameChosen.getFileName().toString());
-            List<ModItem> modItems = searchForMods(modDir);
-            System.out.println("0- exit");
-            printModOptions(modItems);
-            printInstalledMods(modItems, record);
-            System.out.println("Escolha o Mod:");
-            int modNumber = scanner.nextInt();
-            exitIfChosen(modNumber);
-            Path modChosen = getMod(modItems, modNumber);
-            System.out.println("**Você escolheu o mod: " + modChosen.getFileName() + "**");
 
-            Path backupRoot = Paths.get(backupsDir, gameChosen.getFileName().toString());
-            Manager manager = new Manager(gameChosen, modChosen, backupRoot, record);
-            System.out.println("Escolha a operação:");
-            System.out.println("0- exit");
-            System.out.println("1- Adicionar o mod");
-            System.out.println("2- Remover o mod");
-            int operationChosen = scanner.nextInt();
-            exitIfChosen(operationChosen);
-            System.out.println("Base directory: " + gamesDir);
-            Output output;
-            if (operationChosen == 1) {
-                output = manager.addMod(modChosen);
-                System.out.println();
-                System.out.println(output);
-                System.out.printf("**O mod '%s' foi adicionado com sucesso**%n", modChosen.getFileName());
-            } else if (operationChosen == 2) {
-                output = manager.removeMod(modChosen);
-                System.out.println();
-                System.out.println(output);
-                System.out.printf("**O mod '%s' foi removido com sucesso**%n", modChosen.getFileName());
-            }
-            printInstalledMods(modItems, record);
+        List<GameItem> gameItems = searchForGames(Path.of(gamesDir));
+        System.out.println("0- exit");
+        printGameOptions(gameItems);
+        System.out.println("Escolha um jogo:");
+        int gameNumber = SCANNER.nextInt();
+        exitIfChosen(gameNumber);
+        Path gameChosen = getGame(gameItems, gameNumber);
+        System.out.println("**Você escolheu o jogo: " + gameChosen.getFileName() + "**");
+        Path modDir = Paths.get(modsDir, gameChosen.getFileName().toString());
+        List<ModItem> modItems = searchForMods(modDir);
+        System.out.println("0- exit");
+        printModOptions(modItems);
+        printInstalledMods(modItems, record);
+        System.out.println("Escolha o Mod:");
+        int modNumber = SCANNER.nextInt();
+        exitIfChosen(modNumber);
+        Path modChosen = getMod(modItems, modNumber);
+        System.out.println("**Você escolheu o mod: " + modChosen.getFileName() + "**");
+
+        Path backupRoot = Paths.get(backupsDir, gameChosen.getFileName().toString());
+        Manager manager = new Manager(gameChosen, modChosen, backupRoot, record);
+        System.out.println("Escolha a operação:");
+        System.out.println("0- exit");
+        System.out.println("1- Adicionar o mod");
+        System.out.println("2- Remover o mod");
+        int operationChosen = SCANNER.nextInt();
+        exitIfChosen(operationChosen);
+        System.out.println("Base directory: " + gamesDir);
+        Output output;
+        if (operationChosen == 1) {
+            output = manager.addMod(modChosen);
+            System.out.println();
+            System.out.println(output);
+            System.out.printf("**O mod '%s' foi adicionado com sucesso**%n", modChosen.getFileName());
+        } else if (operationChosen == 2) {
+            output = manager.removeMod(modChosen);
+            System.out.println();
+            System.out.println(output);
+            System.out.printf("**O mod '%s' foi removido com sucesso**%n", modChosen.getFileName());
         }
+        printInstalledMods(modItems, record);
+
         SCANNER.close();
     }
 
@@ -109,7 +107,7 @@ public class Main {
         }
     }
 
-    private static Properties getProperties(Path appDir, Path configFile) throws IOException {
+    private static Properties getProperties(Path configFile) throws IOException {
         Properties properties = new Properties();
         try (InputStream input = Files.newInputStream(configFile)) {
             properties.load(input);
@@ -137,14 +135,6 @@ public class Main {
                 .findFirst().orElseGet(ModItem::new).getOption();
     }
 
-    private static Path createFile(String filename) throws IOException {
-        try {
-            return Files.createFile(Path.of(filename));
-        } catch (FileAlreadyExistsException e) {
-            return Path.of(filename);
-        }
-    }
-
     private static void exitIfChosen(int chosen) {
         if (0 == chosen) {
             System.exit(0);
@@ -161,9 +151,7 @@ public class Main {
     }
 
     private static void printGameOptions(List<GameItem> gameItems) {
-        gameItems.forEach(item -> {
-            System.out.println(item.getOption() + "- " + item.getName().getFileName());
-        });
+        gameItems.forEach(item -> System.out.println(item.getOption() + "- " + item.getName().getFileName()));
     }
 
     private static List<GameItem> searchForGames(Path gamesDir) throws IOException {
