@@ -1,24 +1,19 @@
 import java.nio.file.Path;
 
 public class ModItem implements Item {
-    private int option;
-    private Path name;
+    private final int option;
+    private final Path path;
 
-    public ModItem() {
-        this.option = -1;
-        this.name = Path.of("");
-    }
-
-    public ModItem(int option, String nameMode) {
+    public ModItem(int option, Path modPath) {
         this.option = option;
-        this.name = Path.of(nameMode);
+        this.path = modPath;
     }
 
     public int getOption() {
         return option;
     }
 
-    public Path getName() {
-        return name;
+    public Path getPath() {
+        return path;
     }
 }

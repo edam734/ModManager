@@ -1,19 +1,19 @@
 import java.nio.file.Path;
 
 public class GameItem implements Item {
-    private int option;
-    private Path name;
+    private final int option;
+    private final Path path;
 
-    public GameItem(int option, Path gameName) {
+    public GameItem(int option, Path gamePath) {
         this.option = option;
-        this.name = gameName;
+        this.path = gamePath;
     }
 
     public int getOption() {
         return option;
     }
 
-    public Path getName() {
-        return name;
+    public Path getPath() {
+        return path;
     }
 }

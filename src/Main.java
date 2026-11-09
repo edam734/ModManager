@@ -6,7 +6,7 @@ import java.util.*;
 import java.util.stream.Stream;
 
 /**
- * @author Eduardo
+ * @author Edam
  */
 public class Main {
 
@@ -49,23 +49,23 @@ public class Main {
             Files.createFile(record);
         }
 
-        List<GameItem> gameItems = searchForGames(Path.of(gamesDir));
+        List<GameItem> gameItems = findGames(Path.of(gamesDir));
         System.out.println("0- exit");
         printGameOptions(gameItems);
         System.out.println("Escolha um jogo:");
         int gameNumber = SCANNER.nextInt();
         exitIfChosen(gameNumber);
-        Path gameChosen = getGame(gameItems, gameNumber);
+        Path gameChosen = getSelectedGame(gameItems, gameNumber);
         System.out.println("**Você escolheu o jogo: " + gameChosen.getFileName() + "**");
         Path modDir = Paths.get(modsDir, gameChosen.getFileName().toString());
-        List<ModItem> modItems = searchForMods(modDir);
+        List<ModItem> modItems = findMods(modDir);
         System.out.println("0- exit");
         printModOptions(modItems);
         printInstalledMods(modItems, record);
         System.out.println("Escolha o Mod:");
         int modNumber = SCANNER.nextInt();
         exitIfChosen(modNumber);
-        Path modChosen = getMod(modItems, modNumber);
+        Path modChosen = getSelectedMod(modItems, modNumber);
         System.out.println("**Você escolheu o mod: " + modChosen.getFileName() + "**");
 
         Path backupRoot = Paths.get(backupsDir, gameChosen.getFileName().toString());
@@ -79,12 +79,13 @@ public class Main {
         System.out.println("Base directory: " + gamesDir);
         Output output;
         if (operationChosen == 1) {
-            output = manager.addMod(modChosen);
+            output = manager.installMod(modChosen);
             System.out.println();
             System.out.println(output);
-            System.out.printf("**O mod '%s' foi adicionado com sucesso**%n", modChosen.getFileName());
+            System.out.printf("**O mod '%s' foi adicionado com sucesso**%n",
+                    modChosen.getFileName());
         } else if (operationChosen == 2) {
-            output = manager.removeMod(modChosen);
+            output = manager.uninstallMod(modChosen);
             System.out.println();
             System.out.println(output);
             System.out.printf("**O mod '%s' foi removido com sucesso**%n", modChosen.getFileName());
@@ -131,8 +132,10 @@ public class Main {
 
     private static int getModPosition(List<ModItem> list, String im) {
         return list.stream()
-                .filter(modItem -> im.equals(modItem.getName().getFileName().toString()))
-                .findFirst().orElseGet(ModItem::new).getOption();
+                .filter(modItem -> im.equals(modItem.getPath().getFileName().toString()))
+                .findFirst()
+                .map(ModItem::getOption)
+                .orElse(-1);
     }
 
     private static void exitIfChosen(int chosen) {
@@ -141,64 +144,71 @@ public class Main {
         }
     }
 
-    private static Path getGame(List<GameItem> gameItems, int gameNumber) {
+    private static Path getSelectedGame(List<GameItem> gameItems, int gameNumber) {
         Optional<GameItem> gameChosenOpt = gameItems.stream()
-                .filter(mod -> mod.getOption() == gameNumber).findFirst();
-        GameItem gameItem = gameChosenOpt.orElseThrow(() -> new NoSuchElementException(
-                "A opção " + gameNumber + " é inválida."));
-        String nameGame = gameItem.getName().toString();
-        return Path.of(nameGame);
+                .filter(mod -> mod.getOption() == gameNumber)
+                .findFirst();
+        GameItem gameItem = gameChosenOpt.orElseThrow(
+                () -> new NoSuchElementException("A opção " + gameNumber + " é inválida."));
+        return gameItem.getPath();
     }
 
     private static void printGameOptions(List<GameItem> gameItems) {
-        gameItems.forEach(item -> System.out.println(item.getOption() + "- " + item.getName().getFileName()));
+        gameItems.forEach(
+                item -> System.out.println(item.getOption() + "- " + item.getPath().getFileName()));
     }
 
-    private static List<GameItem> searchForGames(Path gamesDir) throws IOException {
+    private static List<GameItem> findGames(Path gamesDir) throws IOException {
         List<Path> games;
 
         try (Stream<Path> stream = Files.list(gamesDir)) {
-            games = stream.toList();
+            games = stream.filter(Files::isDirectory).toList();
         }
+
         List<GameItem> gameItems = new ArrayList<>();
         int op = 1;
+
         for (Path game : games) {
             if (!isException(game.getFileName().toString())) {
                 gameItems.add(new GameItem(op++, game));
             }
         }
+
         return gameItems;
     }
 
     private static boolean isException(String elem) {
-        return Arrays.stream(EXCEPTIONS).toList().contains(elem);
+        return Arrays.asList(EXCEPTIONS).contains(elem);
     }
 
-    private static Path getMod(List<ModItem> modItems, final int modNumber) {
+    private static Path getSelectedMod(List<ModItem> modItems, final int modNumber) {
         Optional<ModItem> modChosenOpt = modItems.stream()
-                .filter(mod -> mod.getOption() == modNumber).findFirst();
-        ModItem modItem = modChosenOpt.orElseThrow(() -> new NoSuchElementException(
-                "A opção " + modNumber + " é inválida."));
-        String nameMode = modItem.getName().toString();
-        return Path.of(nameMode);
+                .filter(mod -> mod.getOption() == modNumber)
+                .findFirst();
+        ModItem modItem = modChosenOpt.orElseThrow(
+                () -> new NoSuchElementException("A opção " + modNumber + " é inválida."));
+        return modItem.getPath();
     }
 
     private static void printModOptions(List<ModItem> modItems) {
-        modItems.forEach(item -> System.out.println(item.getOption() + "- " + item.getName().getFileName()));
+        modItems.forEach(
+                item -> System.out.println(item.getOption() + "- " + item.getPath().getFileName()));
     }
 
-    private static List<ModItem> searchForMods(Path modDir) throws IOException {
+    private static List<ModItem> findMods(Path modDir) throws IOException {
         List<Path> mods;
 
         try (Stream<Path> stream = Files.list(modDir)) {
-            mods = stream.toList();
+            mods = stream.filter(Files::isDirectory).toList();
         }
 
         List<ModItem> modItems = new ArrayList<>();
         int op = 1;
+
         for (Path mod : mods) {
-            modItems.add(new ModItem(op++, mod.toString()));
+            modItems.add(new ModItem(op++, mod));
         }
+
         return modItems;
     }
 }

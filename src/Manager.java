@@ -9,7 +9,7 @@ import java.util.List;
 import java.util.stream.Stream;
 
 /**
- * @author Eduardo
+ * @author Edam
  */
 public class Manager {
 
@@ -22,7 +22,8 @@ public class Manager {
     private int nSkipped = 0;
     private int nCopied = 0;
 
-    public Manager(final Path gameRoot, final Path modRoot, final Path backupRoot, Path recordPath) {
+    public Manager(final Path gameRoot, final Path modRoot, final Path backupRoot,
+                   Path recordPath) {
         this.gameRoot = gameRoot;
         this.backupRoot = backupRoot;
         this.modRoot = modRoot;
@@ -34,29 +35,26 @@ public class Manager {
      *
      * @param mod O Mod a adicionar
      */
-    public Output addMod(Path mod) throws IOException {
-        addFilesRecursively(mod, Source.SOURCE_MOD);
-        addRegistry(mod);
+    public Output installMod(Path mod) throws IOException {
+        copyFilesRecursively(mod, Source.SOURCE_MOD);
+        registerMod(mod);
         return generateOutput("Add");
     }
 
-    private void addRegistry(Path mod) throws IOException {
+    private void registerMod(Path mod) throws IOException {
         // apenas regista se ainda não estiver registado
-        if (!modAlreadyInstalled(mod)) {
+        if (!isModInstalled(mod)) {
             File record = new File(recordPath.toString());
-            BufferedWriter writer = new BufferedWriter(new FileWriter(record, true));
-            writer.append(String.valueOf(mod.getFileName()));
-            writer.newLine();
-            writer.flush();
-            writer.close();
+            try (BufferedWriter writer = new BufferedWriter(new FileWriter(record, true))) {
+                writer.append(String.valueOf(mod.getFileName()));
+                writer.newLine();
+            }
         }
     }
 
-    private boolean modAlreadyInstalled(Path mod) throws IOException {
+    private boolean isModInstalled(Path mod) throws IOException {
         List<String> installedMods = Files.readAllLines(recordPath);
-        boolean isAlreadyInstalled = installedMods.stream()
-                .anyMatch(m -> m.equals(String.valueOf(mod.getFileName())));
-        return isAlreadyInstalled;
+        return installedMods.stream().anyMatch(m -> m.equals(String.valueOf(mod.getFileName())));
     }
 
     /**
@@ -67,14 +65,14 @@ public class Manager {
      *
      * @param mod O Mod a remover
      */
-    public Output removeMod(Path mod) throws IOException {
+    public Output uninstallMod(Path mod) throws IOException {
         deleteFilesRecursively(mod);
-        addFilesRecursively(mod, Source.SOURCE_BACKUP);
-        removeRegistry(mod);
+        copyFilesRecursively(mod, Source.SOURCE_BACKUP);
+        unregisterMod(mod);
         return generateOutput("Remove");
     }
 
-    private void removeRegistry(Path mod) throws IOException {
+    private void unregisterMod(Path mod) throws IOException {
         List<String> lines = Files.readAllLines(recordPath);
         lines.removeIf(line -> line.equals(String.valueOf(mod.getFileName())));
         Files.write(recordPath, lines);
@@ -127,31 +125,32 @@ public class Manager {
         } else {
             nSkipped++;
         }
-        System.out.printf((deleted ? "%s - removed" : "%s - NOT removed or doesn't exists") +
-                "%n", Path.of(Main.gamesDir).relativize(gameFile));
+        System.out.printf("%s - %s%n", gameRoot.relativize(gameFile),
+                deleted ? "removed" : "NOT removed or doesn't exist");
     }
 
-    private void addFilesRecursively(Path modFile, Source source) throws IOException {
+    private void copyFilesRecursively(Path modFile, Source source) throws IOException {
         if (Files.isDirectory(modFile)) {
             try (Stream<Path> stream = Files.list(modFile)) {
                 for (Path subfile : stream.toList()) {
-                    addFilesRecursively(subfile, source);
+                    copyFilesRecursively(subfile, source);
                 }
             }
         } else {
             Path sourceFile = mapModFileTo(modFile, source); // source
             Path gameFile = mapModFileTo(modFile, Source.SOURCE_GAME); // destination
             if (gameFile != null && sourceFile != null && Files.exists(sourceFile)) {
-                filecopy(sourceFile, gameFile);
+                copyFile(sourceFile, gameFile);
             }
         }
     }
 
-    private void filecopy(Path backupFile, Path gameFile) throws IOException {
+    private void copyFile(Path sourceFile, Path gameFile) throws IOException {
         Files.createDirectories(gameFile.getParent());
-        Files.copy(backupFile, gameFile, StandardCopyOption.REPLACE_EXISTING);
-        Path basePath = Path.of(Main.gamesDir);
-        System.out.printf("%s  >>  %s%n", basePath.relativize(backupFile), basePath.relativize(gameFile));
+        Files.copy(sourceFile, gameFile, StandardCopyOption.REPLACE_EXISTING);
+
+        System.out.printf("%s >> %s%n", sourceFile, gameRoot.relativize(gameFile));
+
         nCopied++;
     }
 
