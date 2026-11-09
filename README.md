@@ -1,4 +1,4 @@
-# Mod Manager
+# Mod com.edam.modmanager.Manager
 
 <br>
 

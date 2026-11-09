@@ -1,3 +1,8 @@
+package com.edam.modmanager;
+
+import com.edam.modmanager.model.GameItem;
+import com.edam.modmanager.model.ModItem;
+
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
@@ -11,7 +16,7 @@ import java.util.stream.Stream;
 public class Main {
 
     private static final Scanner SCANNER = new Scanner(System.in);
-    private static final String[] EXCEPTIONS = new String[]{"__Backups", "__Mods", "__ModManager", "manager.bat", "Fluffy Mod Manager", "Steam Controller Configs", "Steamworks Shared", "z- RE5 Lista de ARCS (personagens).url"};
+    private static final String[] EXCEPTIONS = new String[]{"__Backups", "__Mods", "__ModManager", "manager.bat", "Fluffy Mod com.edam.modmanager.Manager", "Steam Controller Configs", "Steamworks Shared", "z- RE5 Lista de ARCS (personagens).url"};
 
     public static String gamesDir;
     public static String backupsDir;

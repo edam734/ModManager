@@ -1,3 +1,5 @@
+package com.edam.modmanager.model;
+
 import java.nio.file.Path;
 
 public class GameItem implements Item {

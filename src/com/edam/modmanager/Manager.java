@@ -1,3 +1,5 @@
+package com.edam.modmanager;
+
 import java.io.BufferedWriter;
 import java.io.File;
 import java.io.FileWriter;
@@ -8,7 +10,11 @@ import java.nio.file.StandardCopyOption;
 import java.util.List;
 import java.util.stream.Stream;
 
+
 /**
+ * Manages the installation and uninstallation of game mods. Handles file copying, deletion, backup
+ * restoration, and the registry of installed mods.
+ *
  * @author Edam
  */
 public class Manager {
@@ -31,9 +37,11 @@ public class Manager {
     }
 
     /**
-     * Operação de adicionar um Mod
+     * Installs a mod by copying its files into the game directory and registering it as installed.
      *
-     * @param mod O Mod a adicionar
+     * @param mod the path to the mod directory
+     * @return an {@link Output} containing the installation results
+     * @throws IOException if an I/O error occurs during installation
      */
     public Output installMod(Path mod) throws IOException {
         copyFilesRecursively(mod, Source.SOURCE_MOD);
@@ -42,7 +50,7 @@ public class Manager {
     }
 
     private void registerMod(Path mod) throws IOException {
-        // apenas regista se ainda não estiver registado
+        // Register the mod only if it is not already registered.
         if (!isModInstalled(mod)) {
             File record = new File(recordPath.toString());
             try (BufferedWriter writer = new BufferedWriter(new FileWriter(record, true))) {
@@ -58,12 +66,12 @@ public class Manager {
     }
 
     /**
-     * Operação de remover um Mod.
-     * <p>
-     * A operação de remover um Mod consiste em apagar os ficheiros de um Mod que já estão no jogo e
-     * substituí-los pelos ficheiros originais.
+     * Uninstalls a mod by removing its files from the game directory, restoring the original files
+     * from the backup when available, and removing the mod from the installed mods registry.
      *
-     * @param mod O Mod a remover
+     * @param mod the path to the mod directory
+     * @return an {@link Output} containing the uninstallation results
+     * @throws IOException if an I/O error occurs during uninstallation
      */
     public Output uninstallMod(Path mod) throws IOException {
         deleteFilesRecursively(mod);

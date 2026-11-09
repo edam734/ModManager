@@ -1,3 +1,5 @@
+package com.edam.modmanager;
+
 public class Output {
     private final String operation;
     private final int nRemoved;
