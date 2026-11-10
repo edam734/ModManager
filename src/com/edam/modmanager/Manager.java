@@ -1,12 +1,10 @@
 package com.edam.modmanager;
 
-import java.io.BufferedWriter;
-import java.io.File;
-import java.io.FileWriter;
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.StandardCopyOption;
+import java.util.ArrayList;
 import java.util.List;
 import java.util.stream.Stream;
 
@@ -23,17 +21,21 @@ public class Manager {
     private final Path backupRoot;
     private final Path modRoot;
     private final Path recordPath;
+    private final String gameSectionHeader;
+    private final List<String> installedMods;
 
     private int nRemoved = 0;
     private int nSkipped = 0;
     private int nCopied = 0;
 
     public Manager(final Path gameRoot, final Path modRoot, final Path backupRoot,
-                   Path recordPath) {
+                   Path recordPath) throws IOException {
         this.gameRoot = gameRoot;
         this.backupRoot = backupRoot;
         this.modRoot = modRoot;
         this.recordPath = recordPath;
+        this.gameSectionHeader = "[" + gameRoot.getFileName() + "]";
+        this.installedMods = getInstalledMods();
     }
 
     /**
@@ -47,22 +49,6 @@ public class Manager {
         copyFilesRecursively(mod, Source.SOURCE_MOD);
         registerMod(mod);
         return generateOutput("Add");
-    }
-
-    private void registerMod(Path mod) throws IOException {
-        // Register the mod only if it is not already registered.
-        if (!isModInstalled(mod)) {
-            File record = new File(recordPath.toString());
-            try (BufferedWriter writer = new BufferedWriter(new FileWriter(record, true))) {
-                writer.append(String.valueOf(mod.getFileName()));
-                writer.newLine();
-            }
-        }
-    }
-
-    private boolean isModInstalled(Path mod) throws IOException {
-        List<String> installedMods = Files.readAllLines(recordPath);
-        return installedMods.stream().anyMatch(m -> m.equals(String.valueOf(mod.getFileName())));
     }
 
     /**
@@ -80,10 +66,98 @@ public class Manager {
         return generateOutput("Remove");
     }
 
-    private void unregisterMod(Path mod) throws IOException {
+    private List<String> getInstalledMods() throws IOException {
         List<String> lines = Files.readAllLines(recordPath);
-        lines.removeIf(line -> line.equals(String.valueOf(mod.getFileName())));
-        Files.write(recordPath, lines);
+        List<String> installedMods = new ArrayList<>();
+
+        boolean iniSection = false;
+
+        for (String elem : lines) {
+            if (iniSection) {
+                if (elem.isBlank() || (elem.startsWith("[") && elem.endsWith("]"))) {
+                    break;
+                } else {
+                    installedMods.add(elem);
+                }
+            }
+
+            if (elem.equalsIgnoreCase(gameSectionHeader)) {
+                iniSection = true;
+            }
+        }
+
+        return installedMods;
+    }
+
+    private void registerMod(Path mod) throws IOException {
+        // Register the mod only if it is not already registered.
+        if (!isModInstalled(mod)) {
+            List<String> lines = Files.readAllLines(recordPath);
+            List<String> newContent = new ArrayList<>();
+            boolean iniSection = false;
+            boolean added = false;
+            for (String line : lines) {
+                if (iniSection) {
+                    if (line.isBlank() || (line.startsWith("[") && line.endsWith("]"))) {
+                        newContent.add(mod.getFileName().toString());
+                        iniSection = false;
+                        added = true;
+                    }
+                }
+                if (line.equalsIgnoreCase(gameSectionHeader)) {
+                    iniSection = true;
+                }
+                newContent.add(line);
+            }
+            // Handle cases where the game's section is at the end of the file or does not exist.
+            if (!added) {
+                if (iniSection) {
+                    newContent.add(mod.getFileName().toString());
+                } else {
+                    if (!newContent.isEmpty() && !newContent.get(newContent.size() - 1).isBlank()) {
+                        newContent.add("");
+                    }
+                    newContent.add(gameSectionHeader);
+                    newContent.add(mod.getFileName().toString());
+                }
+            }
+            Files.write(recordPath, newContent);
+        }
+    }
+
+    private boolean isModInstalled(Path mod) {
+        return installedMods.stream().anyMatch(m -> m.equals(String.valueOf(mod.getFileName())));
+    }
+
+    private void unregisterMod(Path mod) throws IOException {
+        // Unregister the mod only if it is registered.
+        if (isModInstalled(mod)) {
+            List<String> lines = Files.readAllLines(recordPath);
+            List<String> newContent = new ArrayList<>();
+            boolean iniSection = false;
+
+            for (String line : lines) {
+                if (iniSection) {
+                    if (line.isBlank() || (line.startsWith("[") && line.endsWith("]"))) {
+                        iniSection = false;
+                    }
+                }
+
+                if (line.equalsIgnoreCase(gameSectionHeader)) {
+                    iniSection = true;
+                }
+
+                // Skip the mod being unregistered.
+                if (iniSection && line.equals(mod.getFileName().toString())) {
+                    continue;
+                }
+
+                newContent.add(line);
+            }
+
+            Files.write(recordPath, newContent);
+            installedMods.remove(mod.getFileName().toString());
+        }
     }
 
     private void deleteFilesRecursively(Path modFile) throws IOException {

@@ -49,7 +49,7 @@ public class Main {
             properties.store(output, null);
         }
 
-        Path record = appDir.resolve("installed-mods.txt");
+        Path record = appDir.resolve("installed-mods.ini");
         if (Files.notExists(record)) {
             Files.createFile(record);
         }
@@ -66,7 +66,7 @@ public class Main {
         List<ModItem> modItems = findMods(modDir);
         System.out.println("0- exit");
         printModOptions(modItems);
-        printInstalledMods(modItems, record);
+        printInstalledMods(record);
         System.out.println("Escolha o Mod:");
         int modNumber = SCANNER.nextInt();
         exitIfChosen(modNumber);
@@ -95,7 +95,7 @@ public class Main {
             System.out.println(output);
             System.out.printf("**O mod '%s' foi removido com sucesso**%n", modChosen.getFileName());
         }
-        printInstalledMods(modItems, record);
+        printInstalledMods(record);
 
         SCANNER.close();
     }
@@ -123,24 +123,43 @@ public class Main {
         return properties;
     }
 
-    private static void printInstalledMods(List<ModItem> modItems, Path record) throws IOException {
-        List<String> installedMods = Files.readAllLines(record);
-        System.out.println("******* Mods Instalados *******");
-        System.out.println("*                             *");
-        installedMods.forEach(e -> {
-            int pos = getModPosition(modItems, e);
-            System.out.printf("%s [%d] \n", e, pos);
-        });
-        System.out.println("*                             *");
-        System.out.println("*******************************");
-    }
+    private static void printInstalledMods(Path record) throws IOException {
+        List<String> lines = Files.readAllLines(record);
+        int pos = 1;
+        boolean printSection = false;
+        boolean printedGame = false;
 
-    private static int getModPosition(List<ModItem> list, String im) {
-        return list.stream()
-                .filter(modItem -> im.equals(modItem.getPath().getFileName().toString()))
-                .findFirst()
-                .map(ModItem::getOption)
-                .orElse(-1);
+        System.out.println("========== INSTALLED MODS ==========");
+        for (int i = 0; i < lines.size(); i++) {
+            String line = lines.get(i);
+
+            if (line.startsWith("[") && line.endsWith("]")) {
+                printSection = false;
+
+                if (i + 1 < lines.size()) {
+                    String nextLine = lines.get(i + 1);
+                    if (!nextLine.isBlank() &&
+                            !(nextLine.startsWith("[") && nextLine.endsWith("]"))) {
+                        printSection = true;
+                    }
+                }
+
+                if (printSection) {
+                    if (printedGame) {
+                        System.out.println();
+                    }
+                    System.out.println(line.substring(1, line.length() - 1));
+                    pos = 1;
+                    printedGame = true;
+                }
+            } else if (line.isBlank()) {
+                printSection = false;
+            } else if (printSection) {
+                System.out.printf("%d. %s%n", pos++, line);
+            }
+        }
+
+        System.out.println("====================================");
     }
 
     private static void exitIfChosen(int chosen) {
