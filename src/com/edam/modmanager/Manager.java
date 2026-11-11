@@ -19,7 +19,7 @@ public class Manager {
     private final Path gameRoot;
     private final Path backupRoot;
     private final Path modRoot;
-    private final ModRegistry registry;
+    private final ModRegistry modRegistry;
 
     private int nRemoved = 0;
     private int nSkipped = 0;
@@ -30,7 +30,7 @@ public class Manager {
         this.gameRoot = gameRoot;
         this.backupRoot = backupRoot;
         this.modRoot = modRoot;
-        this.registry = new ModRegistry(recordPath, gameRoot);
+        this.modRegistry = new ModRegistry(recordPath, gameRoot);
     }
 
     /**
@@ -42,7 +42,7 @@ public class Manager {
      */
     public Output installMod(Path mod) throws IOException {
         copyFilesRecursively(mod, Source.SOURCE_MOD);
-        registry.registerMod(mod);
+        modRegistry.registerMod(mod);
         return generateOutput("Add");
     }
 
@@ -57,7 +57,7 @@ public class Manager {
     public Output uninstallMod(Path mod) throws IOException {
         deleteFilesRecursively(mod);
         copyFilesRecursively(mod, Source.SOURCE_BACKUP);
-        registry.unregisterMod(mod);
+        modRegistry.unregisterMod(mod);
         return generateOutput("Remove");
     }
 
