@@ -25,6 +25,9 @@ public class Main {
     public static void main(String[] args) throws IOException {
         Path appDir = Path.of("").toAbsolutePath();
         Path configFile = appDir.resolve("config.properties");
+        if (Files.notExists(configFile)) {
+            Files.createFile(configFile);
+        }
         Properties properties = getProperties(configFile);
         gamesDir = properties.getProperty("games.dir");
         backupsDir = properties.getProperty("backups.dir");

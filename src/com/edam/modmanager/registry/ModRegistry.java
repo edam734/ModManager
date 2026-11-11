@@ -22,6 +22,9 @@ public class ModRegistry {
     public ModRegistry(Path recordPath, Path gameRoot) throws IOException {
         this.recordPath = recordPath;
         this.gameSectionHeader = "[" + gameRoot.getFileName() + "]";
+        if (Files.notExists(recordPath)) {
+            Files.createFile(recordPath);
+        }
         this.installedMods = getInstalledMods();
     }
 
