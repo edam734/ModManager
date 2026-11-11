@@ -41,4 +41,6 @@ build/
 .env
 
 ### Local Configuration ###
+installed-mods.ini
 config.properties
+config.properties.example
