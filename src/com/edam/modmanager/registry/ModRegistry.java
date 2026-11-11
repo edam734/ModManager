@@ -39,13 +39,13 @@ public class ModRegistry {
         // Register the mod only if it is not already registered.
         if (!isModInstalled(mod)) {
             List<String> lines = Files.readAllLines(recordPath);
-            List<String> newContent = new ArrayList<>();
+            List<String> updatedLines = new ArrayList<>();
             boolean iniSection = false;
             boolean added = false;
             for (String line : lines) {
                 if (iniSection) {
                     if (line.isBlank() || (line.startsWith("[") && line.endsWith("]"))) {
-                        newContent.add(mod.getFileName().toString());
+                        updatedLines.add(mod.getFileName().toString());
                         iniSection = false;
                         added = true;
                     }
@@ -53,21 +53,22 @@ public class ModRegistry {
                 if (line.equalsIgnoreCase(gameSectionHeader)) {
                     iniSection = true;
                 }
-                newContent.add(line);
+                updatedLines.add(line);
             }
             // Handle cases where the game's section is at the end of the file or does not exist.
             if (!added) {
                 if (iniSection) {
-                    newContent.add(mod.getFileName().toString());
+                    updatedLines.add(mod.getFileName().toString());
                 } else {
-                    if (!newContent.isEmpty() && !newContent.get(newContent.size() - 1).isBlank()) {
-                        newContent.add("");
+                    if (!updatedLines.isEmpty() && !updatedLines.get(updatedLines.size() - 1).isBlank()) {
+                        updatedLines.add("");
                     }
-                    newContent.add(gameSectionHeader);
-                    newContent.add(mod.getFileName().toString());
+                    updatedLines.add(gameSectionHeader);
+                    updatedLines.add(mod.getFileName().toString());
                 }
             }
-            Files.write(recordPath, newContent);
+            Files.write(recordPath, updatedLines);
+            installedMods.add(mod.getFileName().toString());
         }
     }
 
@@ -82,7 +83,7 @@ public class ModRegistry {
         // Unregister the mod only if it is registered.
         if (isModInstalled(mod)) {
             List<String> lines = Files.readAllLines(recordPath);
-            List<String> newContent = new ArrayList<>();
+            List<String> updatedLines = new ArrayList<>();
             boolean iniSection = false;
 
             for (String line : lines) {
@@ -101,10 +102,10 @@ public class ModRegistry {
                     continue;
                 }
 
-                newContent.add(line);
+                updatedLines.add(line);
             }
 
-            Files.write(recordPath, newContent);
+            Files.write(recordPath, updatedLines);
             installedMods.remove(mod.getFileName().toString());
         }
     }
