@@ -60,7 +60,8 @@ public class ModRegistry {
                 if (iniSection) {
                     updatedLines.add(mod.getFileName().toString());
                 } else {
-                    if (!updatedLines.isEmpty() && !updatedLines.get(updatedLines.size() - 1).isBlank()) {
+                    if (!updatedLines.isEmpty() &&
+                            !updatedLines.get(updatedLines.size() - 1).isBlank()) {
                         updatedLines.add("");
                     }
                     updatedLines.add(gameSectionHeader);
@@ -110,7 +111,14 @@ public class ModRegistry {
         }
     }
 
-    private List<String> getInstalledMods() throws IOException {
+    /**
+     * Retrieves the list of installed mods for the current game, preserving their installation
+     * order.
+     *
+     * @return a list containing the names of the installed mods
+     * @throws IOException if an I/O error occurs while reading the registry
+     */
+    public List<String> getInstalledMods() throws IOException {
         List<String> lines = Files.readAllLines(recordPath);
         List<String> installedMods = new ArrayList<>();
 

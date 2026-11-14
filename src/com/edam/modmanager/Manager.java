@@ -6,6 +6,9 @@ import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.StandardCopyOption;
+import java.util.ArrayList;
+import java.util.Collections;
+import java.util.List;
 import java.util.stream.Stream;
 
 /**
@@ -55,40 +58,80 @@ public class Manager {
      * @throws IOException if an I/O error occurs during uninstallation
      */
     public Output uninstallMod(Path mod) throws IOException {
-        deleteFilesRecursively(mod);
-        copyFilesRecursively(mod, Source.SOURCE_BACKUP);
+        uninstallFiles(mod);
+        // copyFilesRecursively(mod, Source.SOURCE_BACKUP);
         modRegistry.unregisterMod(mod);
         return generateOutput("Remove");
     }
 
-    private void deleteFilesRecursively(Path modFile) throws IOException {
-        if (Files.isDirectory(modFile)) {
-            try (Stream<Path> stream = Files.list(modFile)) {
+    private void uninstallFiles(Path modToRemove) throws IOException {
+        List<String> installedModNames = new ArrayList<>(modRegistry.getInstalledMods());
+        Collections.reverse(installedModNames);
+        uninstallFilesRecursively(modToRemove, modToRemove, installedModNames);
+    }
+
+    /**
+     * Recursively processes the files of a mod being uninstalled. Preserves files overridden by
+     * newer mods, restores files from older installed mods when available, and falls back to the
+     * original game files or deletion when no other mod uses them.
+     *
+     * @param currentPath       the current file or directory being processed
+     * @param modToRemove       the root directory of the mod being uninstalled
+     * @param installedModNames the names of installed mods in reverse installation order, from
+     *                          newest to oldest
+     * @throws IOException if an I/O error occurs during file processing
+     */
+    private void uninstallFilesRecursively(Path currentPath, Path modToRemove,
+                                           List<String> installedModNames) throws IOException {
+        if (Files.isDirectory(currentPath)) {
+            try (Stream<Path> stream = Files.list(currentPath)) {
                 for (Path subfile : stream.toList()) {
-                    deleteFilesRecursively(subfile);
+                    uninstallFilesRecursively(subfile, modToRemove, installedModNames);
                 }
             }
         } else {
-            Path gameFile = mapModFileTo(modFile, Source.SOURCE_GAME);
-            if (null != gameFile) {
-                deleteFile(gameFile);
-                deleteDirectoryIfEmpty(gameFile.getParent());
+            Path gameFile = mapModFileTo(currentPath, Source.SOURCE_GAME);
+            boolean passedTargetMod = false;
+            boolean fileResolved = false;
+            Path relativePath = modToRemove.relativize(currentPath);
+            for (String installedModName : installedModNames) {
+                if (!installedModName.equals(modToRemove.getFileName().toString())) {
+                    Path otherModDir = modToRemove.getParent().resolve(installedModName);
+                    Path otherModFile = otherModDir.resolve(relativePath);
+                    if (Files.isRegularFile(otherModFile)) {
+                        fileResolved = true;
+                        // Newer mods take priority; otherwise, restore the latest older mod's file.
+                        if (passedTargetMod) {
+                            copyFile(otherModFile, gameFile);
+                        }
+                        break;
+                    }
+                } else {
+                    passedTargetMod = true;
+                }
+            }
+
+            // No other mod uses this file: restore the original or delete it.
+            if (!fileResolved) {
+                Path backupFile = mapModFileTo(currentPath, Source.SOURCE_BACKUP);
+                if (Files.isRegularFile(backupFile)) {
+                    copyFile(backupFile, gameFile);
+                } else {
+                    deleteFile(gameFile);
+                    deleteDirectoryIfEmpty(gameFile.getParent());
+                }
             }
         }
     }
 
-    private Path mapModFileTo(Path modFile, Source other) {
-        if (Source.SOURCE_MOD.equals(other)) {
-            return modFile;
-        }
-
+    private Path mapModFileTo(Path modFile, Source source) {
         Path relativePath = modRoot.relativize(modFile);
-        if (Source.SOURCE_BACKUP.equals(other)) {
-            return backupRoot.resolve(relativePath);
-        } else if (Source.SOURCE_GAME.equals(other)) {
-            return gameRoot.resolve(relativePath);
-        }
-        return null;
+
+        return switch (source) {
+            case SOURCE_MOD -> modFile;
+            case SOURCE_GAME -> gameRoot.resolve(relativePath);
+            case SOURCE_BACKUP -> backupRoot.resolve(relativePath);
+        };
     }
 
     private void deleteDirectoryIfEmpty(Path dir) throws IOException {
